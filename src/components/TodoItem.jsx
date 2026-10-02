@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Trash2 } from 'lucide-react'
+import { CalendarDays, Check, Trash2 } from 'lucide-react'
 import Badge from './Badge'
+import { CATEGORIES, PRIORITIES } from '../constants'
+import { dueStatus, formatDue } from '../utils'
 
-export default function TodoItem({ todo, leaving, onToggle, onDelete, onEdit, onCycle }) {
+const DUE_STYLE = {
+  overdue:  { fg: 'var(--high)',  bg: 'var(--high-bg)' },
+  today:    { fg: 'var(--today)', bg: 'var(--today-bg)' },
+  upcoming: { fg: 'var(--muted)', bg: 'var(--bg)' },
+  done:     { fg: 'var(--muted)', bg: 'var(--bg)' },
+}
+
+export default function TodoItem({ todo, today, leaving, onToggle, onDelete, onEdit, onCycle }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(todo.text)
   const inputRef = useRef(null)
@@ -18,14 +27,20 @@ export default function TodoItem({ todo, leaving, onToggle, onDelete, onEdit, on
     setEditing(false)
   }
 
+  const cat = CATEGORIES[todo.category]
+  const pri = PRIORITIES[todo.priority]
+  const status = dueStatus(todo.due, todo.done, today)
+  const dueLabel =
+    status === 'today' ? 'วันนี้' : status === 'overdue' ? 'เลยกำหนด ' + formatDue(todo.due) : status ? formatDue(todo.due) : ''
+
   return (
     <li className={'row entering mb-2.5 ' + (leaving ? 'leaving' : '')}>
       <div>
-        <div className="card flex items-center gap-3 px-3.5 py-3" style={{ minHeight: 56 }}>
+        <div className="card flex items-start gap-3 px-3.5 py-3">
           <button
             onClick={() => onToggle(todo.id)}
             aria-label="ทำเครื่องหมายว่าเสร็จแล้ว"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors"
+            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors"
             style={{
               borderColor: todo.done ? 'var(--accent)' : 'var(--line)',
               background: todo.done ? 'var(--accent)' : 'transparent',
@@ -34,40 +49,57 @@ export default function TodoItem({ todo, leaving, onToggle, onDelete, onEdit, on
             {todo.done && <Check size={15} color="#fff" strokeWidth={3} />}
           </button>
 
-          {editing ? (
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={save}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') save()
-                if (e.key === 'Escape') {
+          <div className="min-w-0 flex-1">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={save}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') save()
+                  if (e.key === 'Escape') {
+                    setDraft(todo.text)
+                    setEditing(false)
+                  }
+                }}
+                className="w-full rounded-md px-2 py-1 text-base"
+                style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--accent)' }}
+              />
+            ) : (
+              <span
+                onDoubleClick={() => {
                   setDraft(todo.text)
-                  setEditing(false)
-                }
-              }}
-              className="min-w-0 flex-1 rounded-md px-2 py-1 text-base"
-              style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--accent)' }}
-            />
-          ) : (
-            <span
-              onDoubleClick={() => {
-                setDraft(todo.text)
-                setEditing(true)
-              }}
-              title="ดับเบิลคลิกเพื่อแก้ไข"
-              className="min-w-0 flex-1 cursor-text break-words text-base leading-snug"
-              style={{
-                color: todo.done ? 'var(--muted)' : 'var(--text)',
-                textDecoration: todo.done ? 'line-through' : 'none',
-              }}
-            >
-              {todo.text}
-            </span>
-          )}
+                  setEditing(true)
+                }}
+                title="ดับเบิลคลิกเพื่อแก้ไข"
+                className="block cursor-text break-words text-base leading-snug"
+                style={{
+                  color: todo.done ? 'var(--muted)' : 'var(--text)',
+                  textDecoration: todo.done ? 'line-through' : 'none',
+                }}
+              >
+                {todo.text}
+              </span>
+            )}
 
-          <Badge priority={todo.priority} onClick={() => onCycle(todo.id)} />
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Badge label={cat.label} fg={cat.fg} bg={cat.bg} />
+              {status && (
+                <Badge label={dueLabel} fg={DUE_STYLE[status].fg} bg={DUE_STYLE[status].bg}>
+                  <CalendarDays size={12} />
+                </Badge>
+              )}
+              <Badge
+                label={pri.label}
+                fg={pri.fg}
+                bg={pri.bg}
+                onClick={() => onCycle(todo.id)}
+                title="แตะเพื่อเปลี่ยนความสำคัญ"
+              />
+            </div>
+          </div>
+
           <button
             onClick={() => onDelete(todo.id)}
             aria-label="ลบงาน"

@@ -1,16 +1,14 @@
-import { PRIORITIES } from '../constants'
-
-export default function Badge({ priority, onClick }) {
-  const c = PRIORITIES[priority]
+export default function Badge({ label, fg, bg, onClick, title, children }) {
   const Tag = onClick ? 'button' : 'span'
   return (
     <Tag
       onClick={onClick}
-      title={onClick ? 'แตะเพื่อเปลี่ยนความสำคัญ' : undefined}
-      className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-      style={{ color: c.fg, background: c.bg }}
+      title={title}
+      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+      style={{ color: fg, background: bg }}
     >
-      {c.label}
+      {children}
+      {label}
     </Tag>
   )
 }
